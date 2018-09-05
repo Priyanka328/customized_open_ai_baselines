@@ -23,8 +23,8 @@ cd baselines
 
 If using virtualenv, create a new virtualenv and activate it
 ```bash
-    virtualenv env --python=python3
-    . env/bin/activate
+virtualenv env --python=python3
+. env/bin/activate
 ```
 Install baselines package
 ```bash
