@@ -23,6 +23,8 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
         gym_make = HalfCheetahEnvCustom
     elif env_id=="Ant-v2":
         gym_make = AntEnvCustom
+    else:
+        print ("Unknown ID:[%s]"%(env_id))
     # Configure things.
     rank = MPI.COMM_WORLD.Get_rank()
     if rank != 0:
@@ -32,11 +34,15 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
     env = gym_make()
     #env = bench.Monitor(env, logger.get_dir() and os.path.join(logger.get_dir(), str(rank)))
 
+    rank = 0
+    print ("\n\n\n rank:[%s] \n\n\n"%(rank))
     if evaluation and rank==0:
+        print ("\n\n\n Evaluation. \n\n\n")
         eval_env = gym_make()
         #eval_env = bench.Monitor(eval_env, os.path.join(logger.get_dir(), 'gym_eval'))
         #env = bench.Monitor(env, None)
     else:
+        print ("\n\n\n No Evaluation. \n\n\n")
         eval_env = None
 
     # Parse noise_type
@@ -110,7 +116,7 @@ def parse_args():
     parser.add_argument('--nb-rollout-steps', type=int, default=1000)  # per epoch cycle and MPI worker
     parser.add_argument('--noise-type', type=str, default='adaptive-param_0.2')  # choices are adaptive-param_xx, ou_xx, normal_xx, none
     parser.add_argument('--num-timesteps', type=int, default=None)
-    boolean_flag(parser, 'evaluation', default=False)
+    boolean_flag(parser, 'evaluation', default=True)
     args = parser.parse_args()
     # we don't directly specify timesteps for this script, so make sure that if we do specify them
     # they agree with the other parameters

@@ -129,23 +129,26 @@ def train(seed, env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, rend
                 eval_qs = []
                 if eval_env is not None:
                     eval_episode_reward = 0.
+                    eval_obs = eval_env.reset() # reset here
                     for t_rollout in range(nb_eval_steps):
-                        eval_action, eval_q = agent.pi(eval_obs, apply_noise=False, compute_Q=True)
+                        eval_action, eval_q = agent.pi(eval_obs, apply_noise=False, compute_Q=True) # get action 
                         eval_obs, eval_r, eval_done, eval_info = eval_env.step(max_action * eval_action)  # scale for execution in env (as far as DDPG is concerned, every action is in [-1, 1])
-                        if render_eval:
+                        if render_eval: # render 
                             eval_env.render()
-                        eval_episode_reward += eval_r
 
+                        eval_episode_reward += eval_r # Compute the sum of reward 
+
+                        # Maximum rollout second 
                         sec = eval_env.sim.data.time
                         if sec > _maxSec:
                             eval_done = True
 
                         eval_qs.append(eval_q)
                         if eval_done:
-                            eval_obs = eval_env.reset()
+                            # eval_obs = eval_env.reset() # do reset at start 
                             eval_episode_rewards.append(eval_episode_reward)
                             eval_episode_rewards_history.append(eval_episode_reward)
-                            eval_episode_reward = 0.
+                            # eval_episode_reward = 0.
 
             mpi_size = MPI.COMM_WORLD.Get_size()
             # Log stats.
@@ -168,10 +171,16 @@ def train(seed, env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, rend
             combined_stats['rollout/actions_std'] = np.std(epoch_actions)
             # Evaluation statistics.
             if eval_env is not None:
-                combined_stats['eval/return'] = eval_episode_rewards
+                """
+                combined_stats['eval/return'] = np.mean(eval_episode_rewards)
                 combined_stats['eval/return_history'] = np.mean(eval_episode_rewards_history)
                 combined_stats['eval/Q'] = eval_qs
                 combined_stats['eval/episodes'] = len(eval_episode_rewards)
+                """
+                combined_stats['eval/return'] = eval_episode_reward
+                combined_stats['eval/return_history'] = 0
+                combined_stats['eval/Q'] = 0
+                combined_stats['eval/episodes'] = 0
             def as_scalar(x):
                 if isinstance(x, np.ndarray):
                     assert x.size == 1
@@ -200,5 +209,6 @@ def train(seed, env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, rend
                     with open(os.path.join(logdir, 'eval_env_state.pkl'), 'wb') as f:
                         pickle.dump(eval_env.get_state(), f)
 	    
-            with open('/home/dlxhrl/Projects/baselines/baselines/ddpg_custom/results/ddpg_'+env.env_name+'_seed'+str(seed)+'.pickle','wb') as f:
+            # with open('/home/dlxhrl/Projects/baselines/baselines/ddpg_custom/results/ddpg_'+env.env_name+'_seed'+str(seed)+'.pickle','wb') as f:
+            with open('baselines/ddpg_custom/results/ddpg_'+env.env_name+'_seed'+str(seed)+'.pickle','wb') as f:
                 pickle.dump({'epoch_episode_rewards':epoch_episode_rewards},f)

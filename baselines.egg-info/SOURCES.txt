@@ -66,6 +66,14 @@ baselines/ddpg/memory.py
 baselines/ddpg/models.py
 baselines/ddpg/noise.py
 baselines/ddpg/training.py
+baselines/ddpg_custom/__init__.py
+baselines/ddpg_custom/custom_env.py
+baselines/ddpg_custom/ddpg.py
+baselines/ddpg_custom/main.py
+baselines/ddpg_custom/memory.py
+baselines/ddpg_custom/models.py
+baselines/ddpg_custom/noise.py
+baselines/ddpg_custom/training.py
 baselines/deepq/__init__.py
 baselines/deepq/build_graph.py
 baselines/deepq/models.py
@@ -85,6 +93,7 @@ baselines/gail/__init__.py
 baselines/gail/adversary.py
 baselines/gail/behavior_clone.py
 baselines/gail/gail-eval.py
+baselines/gail/gail-exp.py
 baselines/gail/mlp_policy.py
 baselines/gail/run_mujoco.py
 baselines/gail/statistics.py
