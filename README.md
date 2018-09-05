@@ -19,7 +19,7 @@ Clone the repo and cd into it:
 ```bash
 git clone https://github.com/openai/baselines.git
 cd baselines
-```ls
+```
 
 If using virtualenv, create a new virtualenv and activate it
 ```bash
