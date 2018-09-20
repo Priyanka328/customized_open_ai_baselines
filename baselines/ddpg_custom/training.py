@@ -11,16 +11,32 @@ import numpy as np
 import tensorflow as tf
 from mpi4py import MPI
 
+def print_n_txt(_f,_chars,_addNewLine=True,_DO_PRINT=True,_DO_SAVE=True):
+    """
+        Usage:
+            txtName = ('../res/res_%s.txt'%(self.name))
+            f = open(txtName,'w') # Open txt file
+            print_n_txt(_f=f,_chars='Text name: '+txtName,_DO_PRINT=True,_DO_SAVE=True)
+    """
+    if _DO_SAVE:
+        if _addNewLine: _f.write(_chars+'\n')
+        else: _f.write(_chars)
+        _f.flush();os.fsync(_f.fileno()) # Write to txt
+    if _DO_PRINT:
+        print (_chars)
 
 def train(seed, env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, render, param_noise, actor, critic,
     normalize_returns, normalize_observations, critic_l2_reg, actor_lr, critic_lr, action_noise,
-    popart, gamma, clip_norm, nb_train_steps, nb_rollout_steps, nb_eval_steps, batch_size, memory,
-    tau=0.01, eval_env=None, param_noise_adaption_interval=50, _maxSec=5.0):
+    popart, gamma, tau,clip_norm, nb_train_steps, nb_rollout_steps, nb_eval_steps, batch_size, memory,
+     eval_env=None, param_noise_adaption_interval=50, _maxSec=5.0, _f=None):
     rank = MPI.COMM_WORLD.Get_rank()
 
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
     max_action = env.action_space.high
     logger.info('scaling actions by {} before executing in env'.format(max_action))
+
+    print ("\n\n actor_lr:%.4f critic_lr:%.4f\n\n"%(actor_lr,critic_lr))
+
     agent = DDPG(actor, critic, memory, env.observation_space.shape, env.action_space.shape,
         gamma=gamma, tau=tau, normalize_returns=normalize_returns, normalize_observations=normalize_observations,
         batch_size=batch_size, action_noise=action_noise, param_noise=param_noise, critic_l2_reg=critic_l2_reg,
@@ -149,6 +165,9 @@ def train(seed, env, nb_epochs, nb_epoch_cycles, render_eval, reward_scale, rend
                             eval_episode_rewards.append(eval_episode_reward)
                             eval_episode_rewards_history.append(eval_episode_reward)
                             # eval_episode_reward = 0.
+                # Printout eval
+                _chars = ('[%d/%d] rSumAvg:[%.3f]'%(epoch,nb_epochs,eval_episode_reward))
+                print_n_txt(_f,_chars,_addNewLine=True,_DO_PRINT=True,_DO_SAVE=True)
 
             mpi_size = MPI.COMM_WORLD.Get_size()
             # Log stats.

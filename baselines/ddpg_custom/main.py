@@ -18,11 +18,31 @@ from mpi4py import MPI
 
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
+def print_n_txt(_f,_chars,_addNewLine=True,_DO_PRINT=True,_DO_SAVE=True):
+    """
+        Usage:
+            txtName = ('../res/res_%s.txt'%(self.name))
+            f = open(txtName,'w') # Open txt file
+            print_n_txt(_f=f,_chars='Text name: '+txtName,_DO_PRINT=True,_DO_SAVE=True)
+    """
+    if _DO_SAVE:
+        if _addNewLine: _f.write(_chars+'\n')
+        else: _f.write(_chars)
+        _f.flush();os.fsync(_f.fileno()) # Write to txt
+    if _DO_PRINT:
+        print (_chars)
+
 def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
     if env_id=="HalfCheetah-v2":
         gym_make = HalfCheetahEnvCustom
+        txt_name = 'ddpg_halfcheetah_seed%d.txt'%(seed)
+        f = open(txt_name,'w') # Open txt file
+        print_n_txt(_f=f,_chars='Text name: '+txt_name,_DO_PRINT=True,_DO_SAVE=True)
     elif env_id=="Ant-v2":
         gym_make = AntEnvCustom
+        txt_name = 'ddpg_ant_seed%d.txt'%(seed)
+        f = open(txt_name,'w') # Open txt file
+        print_n_txt(_f=f,_chars='Text name: '+txt_name,_DO_PRINT=True,_DO_SAVE=True)
     else:
         print ("Unknown ID:[%s]"%(env_id))
     # Configure things.
@@ -46,14 +66,16 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
         eval_env = None
 
     # Parse noise_type
+    print ("noise_type: %s"%(noise_type))
     action_noise = None
     param_noise = None
     nb_actions = env.action_space.shape[-1]
     for current_noise_type in noise_type.split(','):
+        print ("current_noise_type: %s"%(current_noise_type))
         current_noise_type = current_noise_type.strip()
         if current_noise_type == 'none':
             pass
-        elif 'adaptive-param' in current_noise_type:
+        elif 'adaptive-param' in current_noise_type: # <= This one 
             _, stddev = current_noise_type.split('_')
             param_noise = AdaptiveParamNoiseSpec(initial_stddev=float(stddev), desired_action_stddev=float(stddev))
         elif 'normal' in current_noise_type:
@@ -83,7 +105,9 @@ def run(env_id, seed, noise_type, layer_norm, evaluation, **kwargs):
     if rank == 0:
         start_time = time.time()
     training.train(seed=seed,env=env, eval_env=eval_env, param_noise=param_noise,
-        action_noise=action_noise, actor=actor, critic=critic, memory=memory, **kwargs)
+        action_noise=action_noise, actor=actor, critic=critic, memory=memory, 
+        _f=f,
+        **kwargs)
     env.close()
     if eval_env is not None:
         eval_env.close()
@@ -103,10 +127,12 @@ def parse_args():
     parser.add_argument('--seed', help='RNG seed', type=int, default=0)
     parser.add_argument('--critic-l2-reg', type=float, default=1e-2)
     parser.add_argument('--batch-size', type=int, default=64)  # per MPI worker
-    parser.add_argument('--actor-lr', type=float, default=1e-4)
-    parser.add_argument('--critic-lr', type=float, default=1e-3)
+    parser.add_argument('--actor-lr', type=float, default=1e-4) # 1e-4
+    parser.add_argument('--critic-lr', type=float, default=1e-4) # 1e-3
     boolean_flag(parser, 'popart', default=False)
-    parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--tau', type=float, default=0.001) # 0.001 (actor)
+    parser.add_argument('--gamma', type=float, default=0.99) # 0.99 (critic)
+
     parser.add_argument('--reward-scale', type=float, default=1.)
     parser.add_argument('--clip-norm', type=float, default=None)
     parser.add_argument('--nb-epochs', type=int, default=1)  # with default settings, perform 1M steps total
@@ -114,7 +140,7 @@ def parse_args():
     parser.add_argument('--nb-train-steps', type=int, default=50)  # per epoch cycle and MPI worker
     parser.add_argument('--nb-eval-steps', type=int, default=100)  # per epoch cycle and MPI worker
     parser.add_argument('--nb-rollout-steps', type=int, default=1000)  # per epoch cycle and MPI worker
-    parser.add_argument('--noise-type', type=str, default='adaptive-param_0.2')  # choices are adaptive-param_xx, ou_xx, normal_xx, none
+    parser.add_argument('--noise-type', type=str, default='adaptive-param_0.1')  # adaptive-param_0.2
     parser.add_argument('--num-timesteps', type=int, default=None)
     boolean_flag(parser, 'evaluation', default=True)
     args = parser.parse_args()

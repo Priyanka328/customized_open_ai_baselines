@@ -97,6 +97,9 @@ class DDPG(object):
         self.stats_sample = None
         self.critic_l2_reg = critic_l2_reg
 
+        print ("[DDPG] gamma:%.4f tau:%.4f actor_lr:%.4f critic_lr:%.4f"%
+            (self.gamma,self.tau,self.actor_lr,self.critic_lr))
+
         # Observation normalization.
         if self.normalize_observations:
             with tf.variable_scope('obs_rms'):
@@ -126,9 +129,11 @@ class DDPG(object):
         # Create networks and core TF parts that are shared across setup parts.
         self.actor_tf = actor(normalized_obs0)
         self.normalized_critic_tf = critic(normalized_obs0, self.actions)
-        self.critic_tf = denormalize(tf.clip_by_value(self.normalized_critic_tf, self.return_range[0], self.return_range[1]), self.ret_rms)
+        self.critic_tf = denormalize(tf.clip_by_value(self.normalized_critic_tf, 
+                                                      self.return_range[0], self.return_range[1]), self.ret_rms)
         self.normalized_critic_with_actor_tf = critic(normalized_obs0, self.actor_tf, reuse=True)
-        self.critic_with_actor_tf = denormalize(tf.clip_by_value(self.normalized_critic_with_actor_tf, self.return_range[0], self.return_range[1]), self.ret_rms)
+        self.critic_with_actor_tf = denormalize(tf.clip_by_value(self.normalized_critic_with_actor_tf, 
+                                                                 self.return_range[0], self.return_range[1]), self.ret_rms)
         Q_obs1 = denormalize(target_critic(normalized_obs1, target_actor(normalized_obs1)), self.ret_rms)
         self.target_Q = self.rewards + (1. - self.terminals1) * gamma * Q_obs1
 
